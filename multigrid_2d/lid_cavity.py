@@ -8,7 +8,7 @@ from tqdm import tqdm
 N_POINTS = 41
 SIZE = 1.0
 DL = SIZE/(N_POINTS-1)
-VISCOSITE = 0.1
+VISCOSITE = 1e-6
 TIME_STEP = 0.0001
 N_ITER = 10000
 U_HAUT = -1
@@ -95,7 +95,7 @@ def main():
 		v_prev = v_next
 		p_prev = p_next
 
-		plt.contourf(X[::2, ::2], Y[::2, ::2], p_next[::2, ::2], cmap="coolwarm")
+		plt.contourf(X[::2, ::2], Y[::2, ::2], u_next[::2, ::2], cmap="coolwarm")
 		plt.colorbar()
 
 		plt.quiver(X[::2, ::2], Y[::2, ::2], u_next[::2, ::2], v_next[::2, ::2], color="black")
@@ -105,7 +105,7 @@ def main():
 		plt.draw()
 		plt.pause(0.05)
 		plt.clf()
-		
+
 	plt.style.use('dark_background')
 	plt.figure()
 	plt.contourf(X[::2, ::2], Y[::2, ::2], p_next[::2, ::2], cmap="coolwarm")

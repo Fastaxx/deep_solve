@@ -3,6 +3,14 @@ import matplotlib.pyplot as plt
 import time
 from mpl_toolkits.mplot3d import axes3d, Axes3D
 from matplotlib import cm
+import sys
+
+if sys.argv[1] == 'v':
+    Initial = 0
+elif sys.argv[1] == 'fmg':
+    Initial = 1
+else:
+    sys.exit("Wrong flag specified")
 
 def u_analytique(x,y):
 	return (x**3-x)*(y**3-y)
@@ -95,12 +103,33 @@ def v_cycle(nx,ny,nb_grille,u,f,level=1):
 
 	return u,res
 
+def FMG(nx,ny,nb_grille,f,nv=1,level=1):
+	if (level==nb_grille):
+		u=np.zeros([nx+2,ny+2])
+		u,res=jacobi_relax(level,nx,ny,u,f,iters=50,pre=True)
+		return u,res
+
+	# Etape 1 : Restriction de la RHS
+	f_coarse = restriction(nx//2,ny//2,f)
+
+	# Etape 2 : Résolution sur la grille grossière
+	u_coarse, res_c = FMG(nx//2,ny//2, nb_grille,f_coarse,nv,level+1)
+
+	# Etape 3 : Interpolation de u_coarse vers u_fine
+	u = prolongation(nx//2,ny//2, u_coarse)
+
+	# Etape 4 : Execution de nv cycles
+	for i in range(nv):
+		u,res = v_cycle(nx,ny,nb_grille-level,u,f)
+
+	return u,res
 
 MAX_CYCLES = 50 # Nombres de V cycles
 NB_LEVELS = 8 # Nombres de grilles
 NX = 2**(NB_LEVELS-1)
 NY = 2**(NB_LEVELS-1)
 EPS = 1e-10
+NV = 1 # Nombres nv dde v-cycle sur FMG
 
 u = np.zeros([NX+2,NY+2])
 f = np.zeros([NX+2,NY+2])
@@ -121,22 +150,35 @@ print("Start")
 t0 = time.time()
 
 # V-cycle
-
-for i in range(1,MAX_CYCLES+1):
-	u,res = v_cycle(NX,NY,NB_LEVELS,u,f)
-	residual = np.max(np.abs(res))
-	if residual<EPS:
-		break
+if Initial==0:
+	for i in range(1,MAX_CYCLES+1):
+		u,res = v_cycle(NX,NY,NB_LEVELS,u,f)
+		residual = np.max(np.abs(res))
+		if residual<EPS:
+			break
+		erreur = u_real[1:NX+1,1:NY+1]-u[1:NX+1,1:NY+1]
+		print('Cycle :', i, ", Erreur :", residual)
+	print('Temps :', time.time()-t0)
 	erreur = u_real[1:NX+1,1:NY+1]-u[1:NX+1,1:NY+1]
-	print('Cycle :', i, ", Erreur :", residual)
-
-print('Temps :', time.time()-t0)
-erreur = u_real[1:NX+1,1:NY+1]-u[1:NX+1,1:NY+1]
-print('Erreur Finale :', np.max(np.abs(erreur)))
+	print('Erreur Finale :', np.max(np.abs(erreur)))
 
 plt.style.use('dark_background')
 plt.figure()
-plt.contourf(erreur)
+plt.contourf(u)
+plt.colorbar()
+plt.show()
+
+# FMG
+if Initial==1:
+	t0=time.time()
+	u,res=FMG(NX,NY,NB_LEVELS,f,NV) 
+	tf=time.time()
+	print('Temps :', tf-t0)
+	erreur = u_real[1:NX+1,1:NY+1]-u[1:NX+1,1:NY+1]
+	print('Erreur Finale :', np.max(np.abs(erreur)))
+plt.style.use('dark_background')
+plt.figure()
+plt.contourf(u)
 plt.colorbar()
 plt.show()
 
