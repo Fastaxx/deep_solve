@@ -136,6 +136,7 @@ def FMG(nx,ny,nb_grille,f,nv=1,level=1):
 
 	return u,res
 
+
 MAX_CYCLES = 10 # Nombres de V cycles
 NB_LEVELS = 8 # Nombres de grilles
 NX = 2**(NB_LEVELS-1)
